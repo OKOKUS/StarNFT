@@ -4,71 +4,104 @@
     <title>Star NFT - TON Connect</title>
     <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
             padding: 20px;
             max-width: 600px;
             margin: 0 auto;
         }
-        button { 
-            background: #0088cc; 
-            color: white; 
-            border: none; 
+        button {
+            background: #0088cc;
+            color: white;
+            border: none;
             padding: 12px 24px;
-            border-radius: 8px; 
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            margin-top: 20px;
+            margin: 20px 0;
         }
         #status {
-            margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
+            margin-top: 20px;
+            display: none;
         }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .loading { background: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
     <h1>Star NFT Wallet Connection</h1>
-    <p>Connect your TON wallet to continue</p>
+    <p>Please connect your TON wallet to continue</p>
     
     <button id="connect-btn">Connect TON Wallet</button>
     <div id="status"></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const connector = new TonConnect.TonConnect({
-                manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
-            });
-
-            const connectBtn = document.getElementById('connect-btn');
-            const statusDiv = document.getElementById('status');
-
-            connectBtn.addEventListener('click', async () => {
-                try {
-                    statusDiv.textContent = "Connecting...";
-                    statusDiv.style.background = "#fff3cd";
-                    
-                    const wallets = await connector.getWallets();
-                    const wallet = wallets[0];
-                    
-                    if (wallet) {
-                        await connector.connect({ jsBridgeKey: wallet.jsBridgeKey });
-                        
-                        connector.onStatusChange((wallet) => {
-                            if (wallet) {
-                                statusDiv.textContent = `Connected: ${wallet.account.address}`;
-                                statusDiv.style.background = "#d4edda";
-                            }
-                        });
-                    }
-                } catch (error) {
-                    statusDiv.textContent = `Error: ${error.message}`;
-                    statusDiv.style.background = "#f8d7da";
-                    console.error(error);
-                }
-            });
+        // Инициализация TonConnect
+        const connector = new TonConnect.TonConnect({
+            manifestUrl: window.location.origin + '/tonconnect-manifest.json'
         });
+
+        // Элементы интерфейса
+        const connectBtn = document.getElementById('connect-btn');
+        const statusDiv = document.getElementById('status');
+
+        // Обработчик подключения
+        async function connectWallet() {
+            try {
+                showStatus('Connecting to wallet...', 'loading');
+                
+                // Получаем список доступных кошельков
+                const wallets = await connector.getWallets();
+                if (!wallets || wallets.length === 0) {
+                    throw new Error('No wallets found');
+                }
+
+                // Подключаем первый доступный кошелек
+                const connectionSource = {
+                    jsBridgeKey: wallets[0].jsBridgeKey
+                };
+                
+                await connector.connect(connectionSource);
+
+                // Обработчик изменения статуса
+                connector.onStatusChange((wallet) => {
+                    if (wallet) {
+                        showStatus(`Connected: ${wallet.account.address}`, 'success');
+                    } else {
+                        showStatus('Disconnected', 'error');
+                    }
+                });
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Connection error:', error);
+            }
+        }
+
+        // Показать статус
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+        }
+
+        // Назначение обработчика
+        connectBtn.addEventListener('click', connectWallet);
+
+        // Проверка существующего подключения
+        (async function init() {
+            if (connector.connected) {
+                const wallet = await connector.getWallet();
+                showStatus(`Already connected: ${wallet.account.address}`, 'success');
+            }
+        })();
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
