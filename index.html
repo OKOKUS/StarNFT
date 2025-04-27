@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TON Connect Demo</title>
+    <title>TON Connect для StarNFT</title>
     <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
         body {
@@ -11,94 +11,93 @@
             padding: 20px;
             text-align: center;
         }
-        button {
+        #connect-btn {
             background: #0088cc;
-            border: none;
-            border-radius: 8px;
             color: white;
-            cursor: pointer;
-            font-size: 16px;
+            border: none;
             padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
             margin: 20px 0;
         }
         #status {
-            border-radius: 5px;
+            padding: 12px;
+            border-radius: 6px;
             margin-top: 20px;
-            padding: 15px;
+            display: none;
         }
-        .connected { background: #d4edda; }
-        .error { background: #f8d7da; }
-        .loading { background: #fff3cd; }
+        .connected { background: #d1e7dd; color: #0f5132; }
+        .error { background: #f8d7da; color: #842029; }
+        .loading { background: #fff3cd; color: #664d03; }
     </style>
 </head>
 <body>
-    <h1>Star NFT Wallet Connect</h1>
-    <button id="connect-btn">Connect Wallet</button>
+    <h1>StarNFT Wallet Connect</h1>
+    <button id="connect-btn">Подключить TON кошелёк</button>
     <div id="status"></div>
 
     <script>
-        // 1. Инициализация
+        // 1. Инициализация TonConnect
         const connector = new TonConnect.TonConnect({
-            manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
+            manifestUrl: window.location.origin + '/tonconnect-manifest.json'
         });
 
         // 2. Элементы интерфейса
         const connectBtn = document.getElementById('connect-btn');
         const statusEl = document.getElementById('status');
 
-        // 3. Функция подключения
-        async function connect() {
+        // 3. Функция обновления статуса
+        function updateStatus(text, type) {
+            statusEl.textContent = text;
+            statusEl.className = type;
+            statusEl.style.display = 'block';
+        }
+
+        // 4. Основная функция подключения
+        async function connectWallet() {
             try {
-                updateStatus('Connecting...', 'loading');
+                updateStatus('Идет подключение...', 'loading');
                 
-                // Получаем список кошельков
+                // Получаем список доступных кошельков
                 const wallets = await connector.getWallets();
                 if (!wallets.length) {
-                    throw new Error('No wallets found');
+                    throw new Error('TON кошельки не найдены');
                 }
 
-                // Подключаемся к первому кошельку
+                // Подключаемся к первому доступному кошельку
                 await connector.connect({
-                    jsBridgeKey: wallets[0].jsBridgeKey
+                    jsBridgeKey: wallets[0].jsBridgeKey,
+                    universalLink: 'https://ton-connect.github.io/demo'
                 });
 
-                // Обработчик изменений
-                connector.onStatusChange(wallet => {
+                // Обработчик изменения статуса
+                connector.onStatusChange((wallet) => {
                     if (wallet) {
-                        updateStatus(`Connected: ${shortAddress(wallet.account.address)}`, 'connected');
+                        const shortAddress = wallet.account.address.slice(0, 4) + '...' + wallet.account.address.slice(-4);
+                        updateStatus(`Подключен: ${shortAddress}`, 'connected');
                     } else {
-                        updateStatus('Disconnected', 'error');
+                        updateStatus('Отключен', 'error');
                     }
                 });
 
             } catch (error) {
-                updateStatus(`Error: ${error.message}`, 'error');
-                console.error('Connection error:', error);
+                updateStatus(`Ошибка: ${error.message}`, 'error');
+                console.error('Ошибка подключения:', error);
             }
         }
 
-        // 4. Вспомогательные функции
-        function updateStatus(text, className) {
-            statusEl.textContent = text;
-            statusEl.className = className;
-            statusEl.style.display = 'block';
-        }
+        // 5. Назначаем обработчик кнопки
+        connectBtn.addEventListener('click', connectWallet);
 
-        function shortAddress(address) {
-            return `${address.slice(0, 4)}...${address.slice(-4)}`;
-        }
-
-        // 5. Инициализация
-        connectBtn.addEventListener('click', connect);
-        
-        // Проверяем существующее подключение
-        if (connector.connected) {
-            updateStatus('Already connected', 'connected');
-        }
-    </script>
-</body>
-</html>
-</html>
+        // 6. Проверяем существующее подключение
+        (async function init() {
+            if (connector.connected) {
+                const wallet = await connector.getWallet();
+                const shortAddress = wallet.account.address.slice(0, 4) + '...' + wallet.account.address.slice(-4);
+                updateStatus(`Уже подключен: ${shortAddress}`, 'connected');
+            }
+        })();
     </script>
 </body>
 </html>
