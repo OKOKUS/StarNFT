@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Star NFT - TON Connect</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Star NFT Wallet Connection</h1>
+    <button id="connect-btn">Connect TON Wallet</button>
+    
+    <script>
+        const connector = new TonConnect.TonConnect({
+            manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
+        });
+
+        document.getElementById('connect-btn').addEventListener('click', async () => {
+            try {
+                const wallet = await connector.connect();
+                alert('Success! Wallet: ' + wallet.account.address);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        });
+    </script>
+</body>
+</html>
