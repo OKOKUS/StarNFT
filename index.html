@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>StarNFT - Wallet Selector</title>
+    <title>StarNFT - Wallet Connect</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,30 +12,71 @@
         }
         .wallet-btn {
             display: block;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            padding: 12px;
-            margin: 10px auto;
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 15px;
+            margin: 15px auto;
             border-radius: 8px;
-            width: 200px;
+            width: 220px;
             text-decoration: none;
-            color: #333;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .instructions {
+            margin: 30px 0;
+            color: #666;
         }
     </style>
 </head>
 <body>
-    <h1>Выберите кошелёк</h1>
-    
-    <a href="https://app.tonkeeper.com/ton-connect" class="wallet-btn">
+    <h1>Подключите TON кошелёк</h1>
+    <p class="instructions">Выберите ваш кошелёк из списка:</p>
+
+    <!-- Tonkeeper -->
+    <button class="wallet-btn" onclick="connectWallet('tonkeeper')">
         Tonkeeper
-    </a>
-    
-    <a href="https://tonhub.com/connect" class="wallet-btn">
+    </button>
+
+    <!-- Tonhub -->
+    <button class="wallet-btn" onclick="connectWallet('tonhub')">
         Tonhub
-    </a>
-    
-    <a href="https://openmask.app/connect" class="wallet-btn">
+    </button>
+
+    <!-- OpenMask -->
+    <button class="wallet-btn" onclick="connectWallet('openmask')">
         OpenMask
-    </a>
+    </button>
+
+    <script>
+        function connectWallet(walletType) {
+            let deepLink;
+            const appName = "StarNFT";
+            const appUrl = "https://okokus.github.io/StarNFT/";
+            
+            // Генерация ссылок для разных кошельков
+            switch(walletType) {
+                case 'tonkeeper':
+                    deepLink = `https://app.tonkeeper.com/ton-connect?v=2&id=${encodeURIComponent(appUrl)}`;
+                    break;
+                case 'tonhub':
+                    deepLink = `https://tonhub.com/connect?url=${encodeURIComponent(appUrl)}`;
+                    break;
+                case 'openmask':
+                    deepLink = `https://openmask.app/connect?url=${encodeURIComponent(appUrl)}`;
+                    break;
+            }
+
+            // Открытие deep link
+            window.location.href = deepLink;
+            
+            // Фолбэк на страницу через 3 секунды
+            setTimeout(() => {
+                if (!document.hidden) {
+                    alert("Кошелёк не обнаружен. Установите приложение и попробуйте снова.");
+                }
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
