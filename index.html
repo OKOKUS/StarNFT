@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>StarNFT - Wallet Connect</title>
+    <title>StarNFT Wallet Connect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,73 +12,150 @@
             max-width: 600px;
             margin: 0 auto;
         }
-        .wallet-btn {
-            display: block;
+        #connect-btn {
             background: #0088cc;
             color: white;
             border: none;
-            padding: 15px;
-            margin: 15px auto;
+            padding: 15px 30px;
             border-radius: 8px;
-            width: 220px;
-            text-decoration: none;
             font-size: 16px;
             cursor: pointer;
+            margin: 20px 0;
         }
-        .instructions {
-            margin: 30px 0;
-            color: #666;
+        #wallet-buttons {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 300px;
         }
+        .wallet-btn {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .wallet-btn img {
+            height: 24px;
+            width: 24px;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .connected { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
-    <h1>Подключите TON кошелёк</h1>
-    <p class="instructions">Выберите ваш кошелёк из списка:</p>
-
-    <!-- Tonkeeper -->
-    <button class="wallet-btn" onclick="connectWallet('tonkeeper')">
-        Tonkeeper
-    </button>
-
-    <!-- Tonhub -->
-    <button class="wallet-btn" onclick="connectWallet('tonhub')">
-        Tonhub
-    </button>
-
-    <!-- OpenMask -->
-    <button class="wallet-btn" onclick="connectWallet('openmask')">
-        OpenMask
-    </button>
+    <h1>StarNFT Wallet Connect</h1>
+    <p>Подключите кошелёк для работы с NFT</p>
+    
+    <button id="connect-btn">Подключить кошелёк</button>
+    
+    <div id="wallet-buttons">
+        <button class="wallet-btn" data-wallet="tonkeeper">
+            <img src="https://tonkeeper.com/favicon.ico" alt="Tonkeeper">
+            Tonkeeper
+        </button>
+        <button class="wallet-btn" data-wallet="tonhub">
+            <img src="https://tonhub.com/favicon.ico" alt="Tonhub">
+            Tonhub
+        </button>
+        <button class="wallet-btn" data-wallet="mytonwallet">
+            <img src="https://mytonwallet.io/favicon.ico" alt="MyTonWallet">
+            MyTonWallet
+        </button>
+    </div>
+    
+    <div id="status"></div>
 
     <script>
-        function connectWallet(walletType) {
-            let deepLink;
-            const appName = "StarNFT";
-            const appUrl = "https://okokus.github.io/StarNFT/";
-            
-            // Генерация ссылок для разных кошельков
-            switch(walletType) {
-                case 'tonkeeper':
-                    deepLink = `https://app.tonkeeper.com/ton-connect?v=2&id=${encodeURIComponent(appUrl)}`;
-                    break;
-                case 'tonhub':
-                    deepLink = `https://tonhub.com/connect?url=${encodeURIComponent(appUrl)}`;
-                    break;
-                case 'openmask':
-                    deepLink = `https://openmask.app/connect?url=${encodeURIComponent(appUrl)}`;
-                    break;
+        // Инициализация
+        const connector = new TonConnect.TonConnect({
+            manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
+        });
+        
+        // Элементы
+        const connectBtn = document.getElementById('connect-btn');
+        const walletButtons = document.getElementById('wallet-buttons');
+        const statusEl = document.getElementById('status');
+        
+        // Deep-ссылки для кошельков
+        const WALLETS = {
+            tonkeeper: {
+                name: 'Tonkeeper',
+                url: 'https://app.tonkeeper.com/ton-connect',
+                universal: 'https://ton-connect.github.io/demo'
+            },
+            tonhub: {
+                name: 'Tonhub',
+                url: 'https://tonhub.com/connect',
+                universal: 'https://ton-connect.github.io/demo-tonhub'
+            },
+            mytonwallet: {
+                name: 'MyTonWallet',
+                url: 'https://connect.mytonwallet.org',
+                universal: 'https://connect.mytonwallet.org/connect'
             }
-
-            // Открытие deep link
-            window.location.href = deepLink;
-            
-            // Фолбэк на страницу через 3 секунды
-            setTimeout(() => {
-                if (!document.hidden) {
-                    alert("Кошелёк не обнаружен. Установите приложение и попробуйте снова.");
-                }
-            }, 3000);
+        };
+        
+        // Показать статус
+        function showStatus(text, type) {
+            statusEl.textContent = text;
+            statusEl.className = type;
+            statusEl.style.display = 'block';
         }
+        
+        // Основная функция подключения
+        async function connectWallet(walletType) {
+            try {
+                showStatus('Подключение...', 'loading');
+                
+                const wallet = WALLETS[walletType];
+                if (!wallet) throw new Error('Кошелёк не поддерживается');
+                
+                // Пытаемся открыть deep link
+                window.location.href = `${wallet.url}?v=2&url=${encodeURIComponent(window.location.href)}`;
+                
+                // Резервный вариант через 3 секунды
+                setTimeout(async () => {
+                    if (!document.hidden) {
+                        showStatus(`Откройте ${wallet.name} вручную`, 'error');
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                showStatus(`Ошибка: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // Инициализация кнопок
+        document.querySelectorAll('.wallet-btn').forEach(btn => {
+            btn.addEventListener('click', () => connectWallet(btn.dataset.wallet));
+        });
+        
+        // Показать выбор кошельков при клике
+        connectBtn.addEventListener('click', () => {
+            walletButtons.style.display = 'flex';
+            connectBtn.style.display = 'none';
+        });
+        
+        // Проверить существующее подключение
+        (async () => {
+            if (connector.connected) {
+                const wallet = await connector.getWallet();
+                showStatus(`Подключен: ${wallet.account.address.slice(0, 4)}...${wallet.account.address.slice(-4)}`, 'connected');
+            }
+        })();
     </script>
 </body>
 </html>
