@@ -4,26 +4,70 @@
     <title>Star NFT - TON Connect</title>
     <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button { 
+            background: #0088cc; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px;
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Star NFT Wallet Connection</h1>
-    <button id="connect-btn">Connect TON Wallet</button>
+    <p>Connect your TON wallet to continue</p>
     
-    <script>
-        const connector = new TonConnect.TonConnect({
-            manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
-        });
+    <button id="connect-btn">Connect TON Wallet</button>
+    <div id="status"></div>
 
-        document.getElementById('connect-btn').addEventListener('click', async () => {
-            try {
-                const wallet = await connector.connect();
-                alert('Success! Wallet: ' + wallet.account.address);
-            } catch (e) {
-                alert('Error: ' + e.message);
-            }
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const connector = new TonConnect.TonConnect({
+                manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
+            });
+
+            const connectBtn = document.getElementById('connect-btn');
+            const statusDiv = document.getElementById('status');
+
+            connectBtn.addEventListener('click', async () => {
+                try {
+                    statusDiv.textContent = "Connecting...";
+                    statusDiv.style.background = "#fff3cd";
+                    
+                    const wallets = await connector.getWallets();
+                    const wallet = wallets[0];
+                    
+                    if (wallet) {
+                        await connector.connect({ jsBridgeKey: wallet.jsBridgeKey });
+                        
+                        connector.onStatusChange((wallet) => {
+                            if (wallet) {
+                                statusDiv.textContent = `Connected: ${wallet.account.address}`;
+                                statusDiv.style.background = "#d4edda";
+                            }
+                        });
+                    }
+                } catch (error) {
+                    statusDiv.textContent = `Error: ${error.message}`;
+                    statusDiv.style.background = "#f8d7da";
+                    console.error(error);
+                }
+            });
         });
     </script>
 </body>
