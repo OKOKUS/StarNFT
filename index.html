@@ -3,7 +3,6 @@
 <head>
     <title>StarNFT Wallet Connect</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,31 +17,11 @@
             border: none;
             padding: 15px 30px;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
-            margin: 20px 0;
-        }
-        #wallet-buttons {
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            margin: 20px auto;
+            margin: 30px 0;
+            width: 100%;
             max-width: 300px;
-        }
-        .wallet-btn {
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .wallet-btn img {
-            height: 24px;
-            width: 24px;
         }
         #status {
             margin-top: 20px;
@@ -56,106 +35,60 @@
 </head>
 <body>
     <h1>StarNFT Wallet Connect</h1>
-    <p>Подключите кошелёк для работы с NFT</p>
+    <p>Нажмите кнопку для подключения вашего TON кошелька</p>
     
-    <button id="connect-btn">Подключить кошелёк</button>
-    
-    <div id="wallet-buttons">
-        <button class="wallet-btn" data-wallet="tonkeeper">
-            <img src="https://tonkeeper.com/favicon.ico" alt="Tonkeeper">
-            Tonkeeper
-        </button>
-        <button class="wallet-btn" data-wallet="tonhub">
-            <img src="https://tonhub.com/favicon.ico" alt="Tonhub">
-            Tonhub
-        </button>
-        <button class="wallet-btn" data-wallet="mytonwallet">
-            <img src="https://mytonwallet.io/favicon.ico" alt="MyTonWallet">
-            MyTonWallet
-        </button>
-    </div>
+    <button id="connect-btn">ПОДКЛЮЧИТЬ КОШЕЛЁК</button>
     
     <div id="status"></div>
 
     <script>
-        // Инициализация
-        const connector = new TonConnect.TonConnect({
-            manifestUrl: 'https://okokus.github.io/StarNFT/tonconnect-manifest.json'
-        });
-        
-        // Элементы
-        const connectBtn = document.getElementById('connect-btn');
-        const walletButtons = document.getElementById('wallet-buttons');
-        const statusEl = document.getElementById('status');
-        
+        // Функция для проверки мобильного устройства
+        function isMobile() {
+            return /Android|iPhone|iPad/i.test(navigator.userAgent);
+        }
+
         // Deep-ссылки для кошельков
-        const WALLETS = {
-            tonkeeper: {
-                name: 'Tonkeeper',
-                url: 'https://app.tonkeeper.com/ton-connect',
-                universal: 'https://ton-connect.github.io/demo'
-            },
-            tonhub: {
-                name: 'Tonhub',
-                url: 'https://tonhub.com/connect',
-                universal: 'https://ton-connect.github.io/demo-tonhub'
-            },
-            mytonwallet: {
-                name: 'MyTonWallet',
-                url: 'https://connect.mytonwallet.org',
-                universal: 'https://connect.mytonwallet.org/connect'
-            }
+        const WALLET_LINKS = {
+            tonkeeper: 'https://app.tonkeeper.com/ton-connect',
+            tonhub: 'https://tonhub.com/connect',
+            mytonwallet: 'https://connect.mytonwallet.org'
         };
-        
-        // Показать статус
-        function showStatus(text, type) {
-            statusEl.textContent = text;
-            statusEl.className = type;
-            statusEl.style.display = 'block';
-        }
-        
+
         // Основная функция подключения
-        async function connectWallet(walletType) {
+        function connectWallet() {
+            const statusEl = document.getElementById('status');
+            
             try {
-                showStatus('Подключение...', 'loading');
-                
-                const wallet = WALLETS[walletType];
-                if (!wallet) throw new Error('Кошелёк не поддерживается');
-                
-                // Пытаемся открыть deep link
-                window.location.href = `${wallet.url}?v=2&url=${encodeURIComponent(window.location.href)}`;
-                
-                // Резервный вариант через 3 секунды
-                setTimeout(async () => {
-                    if (!document.hidden) {
-                        showStatus(`Откройте ${wallet.name} вручную`, 'error');
-                    }
-                }, 3000);
-                
+                // Пытаемся определить, какой кошелёк может быть установлен
+                if (isMobile()) {
+                    // Для мобильных пробуем Tonkeeper (как самый популярный)
+                    window.location.href = WALLET_LINKS.tonkeeper;
+                    
+                    // Если через 3 секунды не переключилось - показываем ошибку
+                    setTimeout(() => {
+                        if (!document.hidden) {
+                            statusEl.textContent = 'Не удалось открыть кошелёк. Установите Tonkeeper, Tonhub или MyTonWallet';
+                            statusEl.className = 'error';
+                            statusEl.style.display = 'block';
+                        }
+                    }, 3000);
+                } else {
+                    // Для десктопа открываем страницу выбора
+                    window.open('https://ton.org/wallets', '_blank');
+                    statusEl.textContent = 'Откройте любой TON кошелёк и подключитесь через него';
+                    statusEl.className = 'error';
+                    statusEl.style.display = 'block';
+                }
             } catch (error) {
-                showStatus(`Ошибка: ${error.message}`, 'error');
-                console.error(error);
+                statusEl.textContent = 'Ошибка: ' + error.message;
+                statusEl.className = 'error';
+                statusEl.style.display = 'block';
             }
         }
-        
-        // Инициализация кнопок
-        document.querySelectorAll('.wallet-btn').forEach(btn => {
-            btn.addEventListener('click', () => connectWallet(btn.dataset.wallet));
-        });
-        
-        // Показать выбор кошельков при клике
-        connectBtn.addEventListener('click', () => {
-            walletButtons.style.display = 'flex';
-            connectBtn.style.display = 'none';
-        });
-        
-        // Проверить существующее подключение
-        (async () => {
-            if (connector.connected) {
-                const wallet = await connector.getWallet();
-                showStatus(`Подключен: ${wallet.account.address.slice(0, 4)}...${wallet.account.address.slice(-4)}`, 'connected');
-            }
-        })();
+
+        // Назначаем обработчик кнопки
+        document.getElementById('connect-btn').addEventListener('click', connectWallet);
     </script>
 </body>
+</html>
 </html>
